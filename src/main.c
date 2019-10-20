@@ -41,10 +41,8 @@
 /*==================[inclusions]=============================================*/
 
 #include "main.h"
-#include "sapi.h"       // <= sAPI header
-
-
 #include "Prefix.h"
+#include "sapi.h"       // <= sAPI header
 #include "TimerTicks.h"
 
 DEBUG_PRINT_ENABLE
@@ -113,7 +111,109 @@ TimerTicks ticks[NOF_TIMERS];
 
 #ifdef TP2_3
 
+	const char * NameLeds[]={"Led Red","Led Green","Led Blue","Led 1","Led 2","Led 3"};
+	const char * NameForm[]={"Senoidal","Cuadrada","Triangular"};
+	const char * NameMag[]={"Frecuencia","Tension"};
 
+	void prefixIface_opLED(const Prefix* handle, const sc_integer LEDNumber, const sc_boolean State)
+	{
+		char aux[32];
+		gpioWrite( (LEDR + LEDNumber), State);
+		sprintf(aux, "Led %s en estado %d \r\n",NameLeds[LEDNumber], State);
+		debugPrintString( aux  );
+	}
+
+	void prefixIface_aSetForma(const Prefix* handle, const sc_integer signalForm)
+	{
+		char aux[32];
+		sprintf(aux, "La forma elegida es : %s \r\n",NameForm[signalForm]);
+		debugPrintString( aux  );
+	}
+
+	void prefixIface_aSetMag(const Prefix* handle, const sc_integer signalMag)
+	{
+		char aux[32];
+		sprintf(aux, "La magnitud elegida es : %s \r\n",NameMag[signalMag]);
+		debugPrintString( aux  );
+	}
+	void prefixIface_aIncFreq(const Prefix* handle)
+	{
+		debugPrintString( "Incrementar frecuencia \r\n" );
+	}
+	void prefixIface_aDecFreq(const Prefix* handle)
+	{
+		debugPrintString( "Decrementar frecuencia \r\n" );
+	}
+	void prefixIface_aIncTens(const Prefix* handle)
+	{
+		debugPrintString( "Incrementar tension \r\n" );
+	}
+	void prefixIface_aDecTens(const Prefix* handle)
+	{
+		debugPrintString( "Decrementar tension\r\n" );
+	}
+
+	void myTickHook( void *ptr ){
+		SysTick_Time_Flag = true;
+	}
+
+	void prefix_setTimer(Prefix* handle, const sc_eventid evid, const sc_integer time_ms, const sc_boolean periodic)
+	{
+		SetNewTimerTick(ticks, NOF_TIMERS, evid, time_ms, periodic);
+	}
+
+	void prefix_unsetTimer(Prefix* handle, const sc_eventid evid)
+	{
+		UnsetTimerTick(ticks, NOF_TIMERS, evid);
+	}
+
+	int main(void)
+	{
+		#if (__USE_TIME_EVENTS == TRUE)
+			uint32_t i;
+		#endif
+
+
+		boardConfig();
+		debugPrintConfigUart( UART_USB, 115200 );
+		debugPrintString( "DEBUG c/sAPI\r\n" );
+
+		tickConfig( TICKRATE_MS );
+		tickCallbackSet( myTickHook, (void*)NULL );
+
+		/* Statechart Initialization */
+		#if (__USE_TIME_EVENTS == TRUE)
+		InitTimerTicks(ticks, NOF_TIMERS);
+		#endif
+
+		prefix_init(&statechart);
+		prefix_enter(&statechart);
+
+
+
+		while (1) {
+			__WFI();
+
+			if (SysTick_Time_Flag == true) {
+				SysTick_Time_Flag = false;
+
+				#if (__USE_TIME_EVENTS == TRUE)
+				UpdateTimers(ticks, NOF_TIMERS);
+				for (i = 0; i < NOF_TIMERS; i++) {
+					if (IsPendEvent(ticks, NOF_TIMERS, ticks[i].evid) == true) {
+
+						prefix_raiseTimeEvent(&statechart, ticks[i].evid);	// Event -> Ticks.evid => OK
+						MarkAsAttEvent(ticks, NOF_TIMERS, ticks[i].evid);
+					}
+				}
+				#else
+				prefixIface_raise_evTick(&statechart);					// Event -> evTick => OK
+				#endif
+
+				prefix_runCycle(&statechart);							// Run Cycle of Statechart
+			}
+		}
+	}
 #endif
 
 
