@@ -45,6 +45,8 @@
 #include "sapi.h"       // <= sAPI header
 #include "TimerTicks.h"
 
+#include "sapi_debugPrint.h"	//Para poder usar la UART
+
 DEBUG_PRINT_ENABLE
 
 #define TICKRATE_MS 1
@@ -69,6 +71,10 @@ static Prefix statechart;
 #endif
 
 TimerTicks ticks[NOF_TIMERS];
+
+
+
+
 
 
 /*==================[internal functions declaration]=========================*/
@@ -647,3 +653,196 @@ int main(void)
 
 #endif
 
+
+
+#ifdef TP2_7
+
+//Macros para el microondas---------------------------------------------------
+#define BOTON_MODO	(1)					//CONSTANTE QUE HACE REFERENCIA A QUE SE PRESIONÓ EL BOTÓN DE CAMBIO DE MODO
+#define BOTON_START_STOP (2)			//CONSTANTE QUE HACE REFERENCIA AL BOTÓN DE INICIO DEL MICROONDAS
+#define BOTON_PUERTA (3)				//CONSTANTE QUE HACE REFERENCIA AL BOTÓN QUE INDICA QUE SE ABRIÓ O SE CERRÓ LA PUERTA
+
+#define TEC_MODO (TEC1)					//ASOCIACION ENTRE BOTONES DEL MICROONDAS Y DE LA EDU-CIAA
+#define TEC_START_STOP (TEC2)
+#define TEC_PUERTA (TEC3)
+
+#define NINGUN_BOTON_PRESIONADO 0		//Macro que indica que ningún botón fue presionado
+
+#define MENSAJE_MODO_NO_SELECCIONADO "Debe seleccionar un modo: 1. Horno, 2. Grill, 3. H+G \r\n"
+
+#define MENSAJE_PUERTA_ABIERTA "Cierre la puerta por favor \r\n"
+
+#define MENSAJE_PAUSA "Pausa \r\n"
+
+#define MENSAJE_CONTINUAR "Continuando \r\n"
+
+
+void prefixIface_opLED(Prefix* handle, sc_integer LEDNumber, sc_boolean State)
+{
+	gpioWrite( (LEDG + LEDNumber), State);
+}
+
+extern void prefixIface_opModo_No_Seleccionado(const Prefix* handle)
+{
+	/*Función que envía un mensaje al usuario por UART, diciéndole
+	 *que no ha seleccionado ningún modo, y entonces no puede comenzar
+	 *a usar el microondas.*/
+
+	debugPrintString( MENSAJE_MODO_NO_SELECCIONADO );
+}
+
+extern void prefixIface_opMensaje_Puerta_Abierta(const Prefix* handle)
+{
+	/*Función que envía un mensaje advirtiendo que la puerta del
+	 *microondas está abierta y por ende no puede prenderse.*/
+
+	debugPrintString( MENSAJE_PUERTA_ABIERTA);
+}
+extern void prefixIface_opMensaje_Pausa(const Prefix* handle)
+{
+	/*Función que envía un mensaje informadno que el microondas
+	 *está en pausa.*/
+	debugPrintString( MENSAJE_PAUSA);
+}
+extern void prefixIface_opMensaje_Continuar(const Prefix* handle)
+{
+	/*Función que envía un mensaje informando que el microondas
+	 *vuelve a funcionar*/
+	debugPrintString( MENSAJE_CONTINUAR);
+}
+
+
+#if (__USE_TIME_EVENTS == true)
+/*! This function has to set up timers for the time events that are required by the state machine. */
+/*!
+	This function will be called for each time event that is relevant for a state when a state will be entered.
+	\param evid An unique identifier of the event.
+	\time_ms The time in milli seconds
+	\periodic Indicates the the time event must be raised periodically until the timer is unset
+*/
+void prefix_setTimer(Prefix* handle, const sc_eventid evid, const sc_integer time_ms, const sc_boolean periodic)
+{
+	SetNewTimerTick(ticks, NOF_TIMERS, evid, time_ms, periodic);
+}
+
+/*! This function has to unset timers for the time events that are required by the state machine. */
+/*!
+	This function will be called for each time event taht is relevant for a state when a state will be left.
+	\param evid An unique identifier of the event.
+*/
+void prefix_unsetTimer(Prefix* handle, const sc_eventid evid)
+{
+	UnsetTimerTick(ticks, NOF_TIMERS, evid);
+}
+#endif
+
+
+/**
+ * @brief	Hook on Handle interrupt from SysTick timer
+ * @return	Nothing
+ */
+void myTickHook( void *ptr ){
+	SysTick_Time_Flag = true;
+}
+
+
+uint32_t chequear_botones(void)
+{
+	/*Función que chequea qué botón de la EDU-CIAA se presionó.
+	  No recibe parámetros, devuelve una variable uint32_t que
+	  dice qué botón se presionó. De valer 0, entonces no se
+	  presionó ninguno.*/
+
+	uint32_t boton_presionado = 0;
+
+	if(gpioRead(TEC_MODO) == 0)
+	{
+		boton_presionado = BOTON_MODO;
+	}
+	else if(gpioRead(TEC_START_STOP) == 0)
+	{
+		boton_presionado = BOTON_START_STOP;
+	}
+	else if(gpioRead(TEC_PUERTA) == 0)
+	{
+		boton_presionado = BOTON_PUERTA;
+	}
+	return boton_presionado;
+}
+
+
+
+
+int main(void)
+{
+	#if (__USE_TIME_EVENTS == true)
+		uint32_t i;
+	#endif
+
+	/* Generic Initialization */
+	boardConfig();
+
+	/* Init Ticks counter => TICKRATE_MS */
+	tickConfig( TICKRATE_MS );
+
+	/* Add Tick Hook */
+	tickCallbackSet( myTickHook, (void*)NULL );
+
+	debugPrintConfigUart( UART_USB, 115200 );		//Configuro la UART por USB para enviar mensajes
+
+	/* Statechart Initialization */
+	#if (__USE_TIME_EVENTS == true)
+	InitTimerTicks(ticks, NOF_TIMERS);
+	#endif
+
+	uint32_t boton_presionado = 0;			//Variable que indica qué botón se presionó: Si vale 0, ninguno
+
+	prefix_init(&statechart);
+	prefix_enter(&statechart);
+//	prefix_runCycle(&statechart);		//Salgo del estado "INICIO"
+
+	/* LEDs toggle in main */
+	while (1) {
+		__WFI();
+
+		if (SysTick_Time_Flag == true)
+		{
+			SysTick_Time_Flag = false;
+
+			//Se chequea si hay timers que deben cumplir su tiempo
+
+			#if (__USE_TIME_EVENTS == true)
+			UpdateTimers(ticks, NOF_TIMERS);
+			for (i = 0; i < NOF_TIMERS; i++)
+			{
+				if (IsPendEvent(ticks, NOF_TIMERS, ticks[i].evid) == true)
+				{
+
+					prefix_raiseTimeEvent(&statechart, ticks[i].evid);	// Event -> Ticks.evid => OK
+					MarkAsAttEvent(ticks, NOF_TIMERS, ticks[i].evid);
+				}
+			}
+			#else
+			prefixIface_raise_evTick(&statechart);					// Event -> evTick => OK
+			#endif
+
+			//Se chequea si alguno de los botones fue presionado
+
+			if((boton_presionado = chequear_botones())!=NINGUN_BOTON_PRESIONADO)
+			{
+				prefixIface_raise_evTECXOprimido(&statechart, boton_presionado);
+			}
+			else
+			{
+				prefixIface_raise_evTECXNoOprimido(&statechart);
+			}
+			prefix_runCycle(&statechart);							// Run Cycle of Statechart
+		}
+	}
+}
+
+
+
+
+
+#endif
