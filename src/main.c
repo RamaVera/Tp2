@@ -653,6 +653,146 @@ int main(void)
 
 #endif
 
+#ifdef TP2_6   /* Ej de la escalera mecánica */
+
+/* Funciones requeridas por YAKINDU */
+
+void prefixIface_opLED(Prefix* handle, sc_integer LEDNumber, sc_boolean State)
+{
+	gpioWrite( (LEDR + LEDNumber), !State);
+}
+
+
+/* Funciones para el MAIN */
+
+uint32_t Buttons_GetStatusP2_(void) {
+	uint8_t ret = false;
+
+	if (gpioRead( TEC2 ) == 0)
+		ret = true;
+
+	return ret;
+}
+
+uint32_t Buttons_GetStatusP1_(void) {
+	uint8_t ret = false;
+
+	if (gpioRead( TEC3 ) == 0)
+		ret = true;
+
+	return ret;
+}
+
+uint32_t Buttons_GetStatusVEL_(void) {
+	uint8_t ret = false;
+
+	if (gpioRead( TEC4 ) == 0)
+		ret = true;
+
+	return ret;
+}
+
+
+/*!
+ * This is a timed state machine that requires timer services
+ */
+
+#if (__USE_TIME_EVENTS == TRUE)
+/*! This function has to set up timers for the time events that are required by the state machine. */
+/*!
+	This function will be called for each time event that is relevant for a state when a state will be entered.
+	\param evid An unique identifier of the event.
+	\time_ms The time in milli seconds
+	\periodic Indicates the the time event must be raised periodically until the timer is unset
+*/
+void prefix_setTimer(Prefix* handle, const sc_eventid evid, const sc_integer time_ms, const sc_boolean periodic)
+{
+	SetNewTimerTick(ticks, NOF_TIMERS, evid, time_ms, periodic);
+}
+
+/*! This function has to unset timers for the time events that are required by the state machine. */
+/*!
+	This function will be called for each time event taht is relevant for a state when a state will be left.
+	\param evid An unique identifier of the event.
+*/
+void prefix_unsetTimer(Prefix* handle, const sc_eventid evid)
+{
+	UnsetTimerTick(ticks, NOF_TIMERS, evid);
+}
+#endif
+
+void myTickHook( void *ptr ){
+
+	SysTick_Time_Flag = true;
+}
+
+int main(void)
+{
+	#if (__USE_TIME_EVENTS == TRUE)
+		uint32_t i;
+	#endif
+
+	boardConfig();
+	debugPrintConfigUart( UART_USB, 115200 );
+	debugPrintString( "DEBUG c/sAPI\r\n" );
+
+	tickConfig( TICKRATE_MS );
+	tickCallbackSet( myTickHook, (void*)NULL );
+
+	/* Statechart Initialization */
+	#if (__USE_TIME_EVENTS == TRUE)
+		InitTimerTicks(ticks, NOF_TIMERS);
+	#endif
+
+	prefix_init(&statechart);
+	prefix_enter(&statechart);
+
+	uint32_t BUTTON_StatusP1;
+	uint32_t BUTTON_StatusP2;
+	uint32_t BUTTON_StatusVEL;
+
+	while (1) {                                 //Time events debe estar en false
+		__WFI();
+		if (SysTick_Time_Flag == true) {
+			SysTick_Time_Flag = false;
+
+			#if (__USE_TIME_EVENTS == TRUE)
+				UpdateTimers(ticks, NOF_TIMERS);
+				for (i = 0; i < NOF_TIMERS; i++) {
+					if (IsPendEvent(ticks, NOF_TIMERS, ticks[i].evid) == true) {
+
+						prefix_raiseTimeEvent(&statechart, ticks[i].evid);	// Event -> Ticks.evid => OK
+						MarkAsAttEvent(ticks, NOF_TIMERS, ticks[i].evid);
+					}
+				}
+			//#else
+				//prefixIface_raise_evTick(&statechart);					// Event -> evTick => OK
+			#endif
+			BUTTON_StatusP2 = Buttons_GetStatusP2_();
+				if (BUTTON_StatusP2 != 0) {
+					prefixIface_raise_evSensorP2(&statechart);
+				}
+
+			BUTTON_StatusP1 = Buttons_GetStatusP1_();
+				if (BUTTON_StatusP1 != 0) {
+					prefixIface_raise_evSensorP1(&statechart);
+				}
+			BUTTON_StatusVEL = Buttons_GetStatusVEL_();
+								if (BUTTON_StatusVEL != 0) {
+									prefixIface_raise_evCambioVel(&statechart);
+									delay(500);
+								}
+
+			prefix_runCycle(&statechart);							// Run Cycle of Statechart
+		}
+
+	}
+
+
+}
+
+
+#endif
 
 
 #ifdef TP2_7
