@@ -137,13 +137,16 @@ static BUTTON_STATE ButtonState[MAX_BUTTON];
 const char * NameLeds[]={"Led Red","Led Green","Led Blue","Led 1","Led 2","Led 3"};
 const char * NameForm[]={"Senoidal","Cuadrada","Triangular"};
 const char * NameMag[]={"Frecuencia","Tension"};
-
+static int FreqCounter = 0;
+static int MagCounter = 0;
 void prefixIface_opLED(const Prefix* handle, const sc_integer LEDNumber, const sc_boolean State)
 {
 	//char aux[32];
-	gpioWrite( (LEDR + LEDNumber), State);
+	gpioWrite( (LEDR + LEDNumber), ! State);
 	//sprintf(aux, "Led %s en estado %d \r\n",NameLeds[LEDNumber], State);
 	//debugPrintString( aux  );
+	//stdioPrintf(UART_USB,  "Led %s en estado %d \r\n",NameLeds[LEDNumber],State);
+
 }
 
 void prefixIface_aSetForma(const Prefix* handle, const sc_integer signalForm)
@@ -151,29 +154,39 @@ void prefixIface_aSetForma(const Prefix* handle, const sc_integer signalForm)
 	//char aux[32];
 	//sprintf(aux, "La forma elegida es : %s \r\n",NameForm[signalForm]);
 	//debugPrintString( aux  );
+
+	stdioPrintf(UART_USB,"La forma elegida es : %s \r\n",NameForm[signalForm]);
+
 }
 
 void prefixIface_aSetMag(const Prefix* handle, const sc_integer signalMag)
 {
 	//char aux[32];
 	//sprintf(aux, "La magnitud elegida es : %s \r\n",NameMag[signalMag]);
-	//debugPrintString( aux  );
+
+	stdioPrintf(UART_USB,"La magnitud elegida es : %s \r\n",NameMag[signalMag]);
 }
 void prefixIface_aIncFreq(const Prefix* handle)
 {
-	debugPrintString( "Incrementar frecuencia \r\n" );
+	FreqCounter++;
+	stdioPrintf(UART_USB, "Incrementar frecuencia %d \r\n", FreqCounter);
 }
 void prefixIface_aDecFreq(const Prefix* handle)
 {
-	debugPrintString( "Decrementar frecuencia \r\n" );
+	FreqCounter--;
+	stdioPrintf(UART_USB, "Decrementar frecuencia %d \r\n", FreqCounter);
+
 }
 void prefixIface_aIncTens(const Prefix* handle)
 {
-	debugPrintString( "Incrementar tension \r\n" );
+	MagCounter++;
+	stdioPrintf(UART_USB, "Incrementar tension %d \r\n", MagCounter);
 }
 void prefixIface_aDecTens(const Prefix* handle)
 {
-	debugPrintString( "Decrementar tension\r\n" );
+	MagCounter--;
+	stdioPrintf(UART_USB, "Decrementar tension %d \r\n", MagCounter);
+
 }
 
 void myTickHook( void *ptr ){
