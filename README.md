@@ -10,13 +10,13 @@ encuentra en la carpeta firmware_v2/projects/TP2/statecharts_bare_metal/gen, clo
 /firmware_v2/sapi_examples/statecharts/statecharts_bare_metal/gen.
 `
 ![alt text](https://raw.githubusercontent.com/username/projectname/branch/path/to/img.png)
-```
 
+1b-1.PNG
 
 
 
 
 **1.c** Idem b pero con datos (definiciones, constantes, variables, estructuras, etc
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNDE3NDgzNzYyLDE3ODI1MjU5MjFdfQ==
+eyJoaXN0b3J5IjpbMTExNzUzNzMxMCwxNzgyNTI1OTIxXX0=
 -->
