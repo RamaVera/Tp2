@@ -1,6 +1,7 @@
 # Tp2
 Sistemas Embebidos Tp N° 2
 
+
 **1.b** Documentar mediante tablas c/texto e imágenes la secuencia de funciones invocadas durante la ejecución del ejemplo de aplicación, en qué archivo se encuentran, su descripción detallada, qué efecto tiene la aplicación sobre el hardware (identificar circuitos, puertos, pines, niveles, etc.) así como la interacción entre las mismas c. 
 
 
@@ -9,7 +10,7 @@ estados del ejemplo “Blinky” que se utilizó en el Tp1. Este archivo prefix 
 encuentra en la carpeta firmware_v2/projects/TP2/statecharts_bare_metal/gen, clonado de
 /firmware_v2/sapi_examples/statecharts/statecharts_bare_metal/gen.
 
-![alt text](https://github.com/RamaVera/Tp2/
+![alt text](https://github.com/RamaVera/Tp2/blob/master/img/1b-1.PNG)
 
 Para generar los archivos de código correspondientes al diagrama de estados, se hace click derecho
 sobre el archivo prefix.sgen y se selecciona la opción “Generate Code Artifacts”. Este se puede ver
@@ -40,12 +41,12 @@ más arriba en el main.c. Se puede ver en la figura 6.
 
 ![alt text](https://github.com/RamaVera/Tp2/blob/master/img/1b-6.PNG)
 
-** La MACRO mencionada sirve para el uso de eventos del statechart, triggereados por el
+**La MACRO mencionada sirve para el uso de eventos del statechart, triggereados por el
 cumplimiento de un timer. Es decir, que el diagrama de estados cambiaría de estado
 automáticamente una vez que se cumpla un determinado tiempo. En este ejemplo uno
 tendería a decir que debería estar en “true”, ya que una vez cumplido el tiempo seteado, el
 LED se prende o se apagara, es decir, cambia de estado. Para ver porqué sucede esto, se
-analizan las funciones utilizadas en el main. **
+analizan las funciones utilizadas en el main.**
 
 Lo siguiente que se hace en la figura 5 es configurar el tickrate y el tickcallbackset, es decir,
 el tiempo de interrupción y la función que se invoca en esa interrupción. Esta función se encuentra
@@ -174,23 +175,80 @@ Volviendo a la figura 15, al final de dicha función se ejecuta “prefix_clearI
 que se analizó en la figura 10 y solo le dice al statechart que el evento que triggerea el cambio de
 estados no está sucediendo.
 
-** Al principio se dijo que se estaba utilizando un evento por cumplimiento de un timer y
+**Al principio se dijo que se estaba utilizando un evento por cumplimiento de un timer y
 que por esto, la MACRO “__USE_TIME_EVENTS” debería estar en “true” pero se
 encuentra en “false”. Entonces, a partir de lo visto hasta acá, sucede que, cuando se cumple el
 timer y se invoca a la interrupción de Ticks, se está levantando un flag, el cual luego es
 analizado en el main. Es decir, no se hace el cambio de estado por un timer si no por el valor
-del flag, si es “true” o “false”. **
-
-
-
-
-
-
-
-
+del flag, si es “true” o “false”.**
 
 
 **1.c** Idem b pero con datos (definiciones, constantes, variables, estructuras, etc
+
+En primer lugar, se analizarán los tipos de datos de las funciones y constantes declaradas en el archivo
+firmware_v2\sapi_examples\edu-ciaa-nxp\statecharts\statecharts_bare_metal\gen\Prefix.c
+
+![alt text](https://github.com/RamaVera/Tp2/blob/master/img/1c-1.PNG)
+
+En el archivo
+firmware_v2\sapi_examples\edu-ciaa-nxp\statecharts\statecharts_bare_metal\gen\Prefix.h
+se encuentra definido “Prefix” como la siguiente estructura:
+
+![alt text](https://github.com/RamaVera/Tp2/blob/master/img/1c-2.PNG)
+
+Donde “PrefixStates” es un enum con los distintos posibles estados de la región:
+```
+typedefenum
+{
+	Prefix_main_region_APAGADO,
+	Prefix_main_region_ENCENDIDO,
+	Prefix_last_state
+} PrefixStates;
+```
+
+Y “PrefixIface” es una estructura con un booleano:
+
+```
+typedefstruct
+{
+	sc_booleanevTick_raised;
+} PrefixIface;
+```
+
+La variable stateConfVectorPosition es un int para guardar la posición del vector.
+Estos tres datos son los que reciben las funciones declaradas y los que se manipulan dentro de las mismas, por ejemplo, para ir cambiando de estado.
+A continuación, se analizarán los tipos de datos de las funciones y constantes declaradas en el archivo
+/firmware_v2/sapi_examples/edu-ciaa-nxp/statecharts/statecharts_bare_metal/src/main.c
+Al principio del archivo se definen las opciones de compilación y se selecciona qué ejemplo se quiere ejecutar
+
+![alt text](https://github.com/RamaVera/Tp2/blob/master/img/1c-3.PNG)
+
+Luego se define un flag de tipo volátil, una variable de tipo Prefix (ya explicada), el uso de los TIME_EVENTS y una variable de tipo TimerTicks, que es una estructura que se encuentra declarada en /firmware_v2/examples/statechart/inc/TimerTicks.h
+
+![alt text](https://github.com/RamaVera/Tp2/blob/master/img/1c-4.PNG)
+
+```
+typedefstruct
+{
+	sc_eventidevid;
+	sc_uintegertime_ms;
+	sc_uintegercount;
+	sc_booleanperiodic;
+	sc_booleanactive;
+	sc_booleanevPending;
+} TimerTicks;
+```
+
+El resto del programa (cuya secuencia de funciones está explicada en otro documento) usa principalmente los datos nombrados anteriormente.
+
+
+
+
+
+
+
+
+
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEyMjMwNzM1MzMsMTE0ODk4NDg2OF19
+eyJoaXN0b3J5IjpbLTE4MzE4NzkzMDQsMTE0ODk4NDg2OF19
 -->
