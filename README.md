@@ -10,9 +10,9 @@ estados del ejemplo “Blinky” que se utilizó en el Tp1. Este archivo prefix 
 encuentra en la carpeta firmware_v2/projects/TP2/statecharts_bare_metal/gen, clonado de
 /firmware_v2/sapi_examples/statecharts/statecharts_bare_metal/gen.
 
-![Alt text](https://github.com/RamaVera/Tp2/img/1b-1.PNG)
+![Alt text](Tp2/img/1b-1.png)
 
 **1.c** Idem b pero con datos (definiciones, constantes, variables, estructuras, etc
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTE0ODk4NDg2OF19
+eyJoaXN0b3J5IjpbLTIwMjg0NzM5MiwxMTQ4OTg0ODY4XX0=
 -->
