@@ -1,8 +1,9 @@
-## Tp2
+##Tp2
 Sistemas Embebidos Tp N° 2
 
 
-# **1.b** Documentar mediante tablas c/texto e imágenes la secuencia de funciones invocadas durante la ejecución del ejemplo de aplicación, en qué archivo se encuentran, su descripción detallada, qué efecto tiene la aplicación sobre el hardware (identificar circuitos, puertos, pines, niveles, etc.) así como la interacción entre las mismas c. 
+# **1.b** 
+Documentar mediante tablas c/texto e imágenes la secuencia de funciones invocadas durante la ejecución del ejemplo de aplicación, en qué archivo se encuentran, su descripción detallada, qué efecto tiene la aplicación sobre el hardware (identificar circuitos, puertos, pines, niveles, etc.) así como la interacción entre las mismas c. 
 
 
 En la figura 1 se puede ver el contenido del archivo prefix.sct. Este contiene el diagrama de
@@ -183,7 +184,8 @@ analizado en el main. Es decir, no se hace el cambio de estado por un timer si n
 del flag, si es “true” o “false”.**
 
 
-# **1.c** Idem b pero con datos (definiciones, constantes, variables, estructuras, etc
+# **1.c**
+Idem b pero con datos (definiciones, constantes, variables, estructuras, etc
 
 En primer lugar, se analizarán los tipos de datos de las funciones y constantes declaradas en el archivo
 firmware_v2\sapi_examples\edu-ciaa-nxp\statecharts\statecharts_bare_metal\gen\Prefix.c
